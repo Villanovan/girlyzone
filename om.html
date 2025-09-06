@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Girly Zone Order Management</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff0f5;
+    }
+
+    header.main-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(to right, #f78da7, #d63384);
+      flex-wrap: wrap;
+    }
+
+    .logo-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    .site-title {
+      font-size: 2rem;
+      color: white;
+      margin-left: 15px;
+      flex: 1;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #d63384;
+      margin-top: 20px;
+    }
+
+    input[type="text"], input[type="file"], input[type="number"], input[type="password"] {
+      padding: 8px;
+      margin: 5px 0;
+      display: block;
+      width: 90%;
+      max-width: 300px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 10px 5px 20px 0;
+      background-color: #f57e92;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #d63384;
+    }
+
+    table {
+      width: 95%;
+      margin: auto;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    img {
+      max-width: 100px;
+      border-radius: 5px;
+    }
+
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #auth-section {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hidden {
+      display: none;
+    }
+    #user-status {
+      margin: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="logo-container">
+      <img src="logo.jpg" alt="Logo" class="logo-image" />
+    </div>
+    <h1 class="site-title">The Girly Zone - Order Management</h1>
+  </header>
+
+  <div id="auth-section">
+    <h3>Log In to Manage Products</h3>
+    <button id="google-login-btn">Sign In with Google</button>
+    <button id="logout-btn" class="hidden">Log Out</button>
+    <div id="user-status"></div>
+  </div>
+
+  <h2>Search by Serial Number</h2>
+  <div class="form-container">
+    <input type="text" id="searchInput" placeholder="Enter serial number..."/>
+  </div>
+
+  <div id="add-product-section" class="hidden">
+    <h3>Add New Entry</h3>
+    <div class="form-container">
+      <input type="text" id="newSerial" placeholder="Enter serial number"/>
+      <input type="file" id="newImage" accept="image/*"/>
+      <input type="number" id="newPrice" placeholder="Enter price"/>
+      <button id="addBtn">Add to Firebase</button>
+    </div>
+  </div>
+
+  <table id="imageTable">
+    <thead>
+      <tr>
+        <th>Serial Number</th>
+        <th>Image</th>
+        <th>Price</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    // Now only imports GoogleAuth functions
+    import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDDC1wYu1NxIcaWwBjKdsJ3Fv63X0D6EwE",
+      authDomain: "girly-zone.firebaseapp.com",
+      projectId: "girly-zone",
+      storageBucket: "girly-zone.appspot.com",
+      messagingSenderId: "890372506369",
+      appId: "1:890372506369:web:2d8b6436e1001e75ce1100",
+      measurementId: "G-GW8D4RKGEH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    const tableBody = document.querySelector("#imageTable tbody");
+    const addBtn = document.getElementById("addBtn");
+
+    // Updated references to only include Google buttons
+    const googleLoginBtn = document.getElementById("google-login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userStatusDiv = document.getElementById("user-status");
+    const addProductSection = document.getElementById("add-product-section");
+
+    const loadProducts = async (searchTerm = "") => {
+      console.log("🔄 Loading products...");
+      tableBody.innerHTML = '';
+      try {
+        let q;
+        if (searchTerm.trim() === "") {
+          q = query(collection(db, "products"), orderBy("serial", "asc"));
+        } else {
+          q = query(collection(db, "products"), where("serial", "==", searchTerm));
+        }
+
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          const row = tableBody.insertRow();
+          const cell = row.insertCell(0);
+          cell.colSpan = 4;
+          cell.textContent = "No products found.";
+          cell.style.textAlign = "center";
+          return;
+        }
+
+        querySnapshot.forEach((doc) => {
+          const product = doc.data();
+          product.id = doc.id;
+          const newRow = createProductRow(product);
+          tableBody.appendChild(newRow);
+        });
+        console.log("✅ Products loaded!");
+      } catch (error) {
+        console.error("❌ Error loading products:", error);
+        alert("Error loading products. Check console.");
+      }
+    };
+
+    const createProductRow = (product) => {
+      const row = document.createElement("tr");
+
+      const serialCell = document.createElement("td");
+      serialCell.textContent = product.serial;
+      row.appendChild(serialCell);
+
+      const imageCell = document.createElement("td");
+      const img = document.createElement("img");
+      img.src = product.image || '';
+      img.alt = `Product ${product.serial}`;
+      imageCell.appendChild(img);
+      row.appendChild(imageCell);
+
+      const priceCell = document.createElement("td");
+      priceCell.textContent = `$${product.price}`;
+      row.appendChild(priceCell);
+
+      const actionsCell = document.createElement("td");
+      if (auth.currentUser) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Remove";
+        deleteBtn.classList.add("delete-btn");
+        deleteBtn.onclick = () => deleteProduct(product.id, product.serial);
+        actionsCell.appendChild(deleteBtn);
+      }
+      row.appendChild(actionsCell);
+
+      return row;
+    };
+
+    addBtn.addEventListener("click", async () => {
+      if (!auth.currentUser) {
+        alert("Please log in to add a product.");
+        return;
+      }
+      const serial = document.getElementById("newSerial").value.trim();
+      const file = document.getElementById("newImage").files[0];
+      const price = document.getElementById("newPrice").value;
+
+      if (!serial || !file || !price) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      try {
+        const filePath = "products/" + Date.now() + "-" + file.name;
+        const storageRef = ref(storage, filePath);
+
+        await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(storageRef);
+
+        await addDoc(collection(db, "products"), {
+          serial: serial,
+          price: parseFloat(price),
+          image: imageUrl,
+          imagePath: filePath,
+          keywords: [serial.toLowerCase()]
+        });
+
+        alert("✅ Product added!");
+        document.getElementById("newSerial").value = "";
+        document.getElementById("newImage").value = "";
+        document.getElementById("newPrice").value = "";
+        loadProducts();
+      } catch (error) {
+        console.error("Error adding product: ", error);
+        alert("❌ Failed to add product. Check console.");
+      }
+    });
+
+    window.deleteProduct = async (id, serial) => {
+      if (!auth.currentUser) {
+        alert("Please log in to delete a product.");
+        return;
+      }
+      if (!confirm(`Are you sure you want to delete product ${serial}?`)) {
+        return;
+      }
+
+      try {
+        const productRef = doc(db, "products", id);
+        const productSnap = await getDoc(productRef);
+
+        if (!productSnap.exists()) {
+          alert("Product not found!");
+          return;
+        }
+
+        const data = productSnap.data();
+
+        if (data.imagePath) {
+          try {
+            const imageRef = ref(storage, data.imagePath);
+            await deleteObject(imageRef);
+            console.log("🗑️ Image deleted from storage.");
+          } catch (err) {
+            console.warn("⚠️ Could not delete image from storage:", err);
+          }
+        }
+
+        await deleteDoc(productRef);
+        alert("✅ Product deleted!");
+        loadProducts();
+      } catch (error) {
+        console.error("❌ Error deleting product:", error);
+        alert("Error deleting product. Check console.");
+      }
+    };
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      loadProducts(e.target.value);
+    });
+
+    // Handle Google Sign-in
+    googleLoginBtn.addEventListener("click", async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+        alert("✅ Logged in with Google successfully!");
+      } catch (error) {
+        console.error("Google login error: ", error);
+        alert(`❌ Google login failed: ${error.message}`);
+      }
+    });
+
+    // Handle Sign-out
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        alert("✅ Logged out successfully!");
+      } catch (error) {
+        console.error("Log out error: ", error);
+        alert(`❌ Log out failed: ${error.message}`);
+      }
+    });
+
+    // Auth state listener to update the UI
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userStatusDiv.textContent = `Logged in as: ${user.email || user.displayName}`;
+        logoutBtn.classList.remove("hidden");
+        googleLoginBtn.classList.add("hidden");
+        addProductSection.classList.remove("hidden");
+      } else {
+        userStatusDiv.textContent = "Logged out.";
+        logoutBtn.classList.add("hidden");
+        googleLoginBtn.classList.remove("hidden");
+        addProductSection.classList.add("hidden");
+      }
+      loadProducts();
+    });
+  </script>
+</body>
+</html>
