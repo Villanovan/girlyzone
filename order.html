@@ -1,0 +1,159 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Order Form</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #fef2f5;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      position: relative;
+    }
+    h2 {
+      color: #d63384;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    input[readonly] {
+      background-color: #f8f8f8;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #d63384;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background-color: #b1206b;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Loader styles */
+    .loader-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(2px);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      border-radius: 10px;
+    }
+    .loader {
+      border: 4px solid #eee;
+      border-top: 4px solid #d63384;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Complete Your Order</h2>
+    <form id="orderForm">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="number">Phone Number:</label>
+      <input type="text" id="number" name="number" required />
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required />
+
+      <label for="location">Location:</label>
+      <textarea id="location" name="location" rows="3" required></textarea>
+
+      <label for="serial">Product Serial Number:</label>
+      <input type="text" id="serial" name="serial" readonly />
+
+      <button type="submit" id="submitBtn">Submit Order</button>
+    </form>
+
+    <!-- Loader overlay -->
+    <div id="loaderOverlay" class="loader-overlay">
+      <div class="loader"></div>
+      <p>Submitting your order…</p>
+    </div>
+  </div>
+
+  <!-- Include EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const serial = sessionStorage.getItem('serialNumber');
+      if (serial) {
+        document.getElementById('serial').value = serial;
+      } else {
+        alert('No product selected. Redirecting to product page.');
+        window.location.href = 'index.html';
+      }
+    });
+
+    // 💖 NEW: Initialize EmailJS with your Public Key
+    (function() {
+      // Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS Public Key
+      emailjs.init('JT3AP5gGHNvU-1y5A');
+    })();
+    // 💖 UPDATED: The submit event listener now sends the form via EmailJS
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Send the form data using the EmailJS SDK
+      emailjs.sendForm('service_gmqlinf', 'template_u2hp19r', this)
+        .then(function() {
+          alert('✅ Order submitted successfully!');
+          e.target.reset();
+          sessionStorage.removeItem('serialNumber');
+          // Optional: Redirect after successful submission
+          window.location.href = 'index.html';
+        }, function(error) {
+          alert('❌ Failed to send the order. Please try again. Error: ' + JSON.stringify(error));
+        });
+    });
+  </script>
+</body>
+</html>

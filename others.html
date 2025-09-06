@@ -1,0 +1,417 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Girly Zone</title>
+  <style>
+    /* Import Google Fonts for a style similar to your image */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:ital,wght@0,400;1,400&family=Great+Vibes&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    /* --- HEADER STYLES --- */
+    header.main-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #ffb3e6, #ff66b2); /* Pink gradient */
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      flex-wrap: nowrap;
+      text-align: center;
+      gap: 10px;
+    }
+
+    /* Background sparkle animation */
+    header.main-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="40" fill="none" stroke="%23fff" stroke-width="2" opacity="0.1"/%3E%3Ccircle cx="20" cy="80" r="10" fill="%23fff" opacity="0.2"/%3E%3C/svg%3E');
+      background-size: 100px 100px;
+      animation: sparkle-animation 20s infinite linear;
+      z-index: 1;
+    }
+    
+    @keyframes sparkle-animation {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .logo-image {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 4px solid white;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      flex-shrink: 0;
+      z-index: 2; /* Ensure logo is above the animation */
+    }
+    
+    .header-text-container {
+      flex: 1;
+      text-align: center;
+      flex-shrink: 0;
+      z-index: 2; /* Ensure text is above the animation */
+    }
+
+    .header-text-container h1 {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2.5rem;
+      color: #2c3e50;
+      line-height: 1;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+    }
+
+    .header-text-container h1 .the-prefix {
+      font-family: 'Great Vibes', cursive;
+      font-size: 0.5em; /* Smaller size for "the" */
+      color: white;
+      position: relative;
+      top: -0.8em; /* Super-script positioning */
+      margin-right: 5px;
+    }
+    
+    .header-text-container h1 .zone-word {
+      color: #f7f7f7;
+    }
+    
+    .header-text-container p {
+      margin: 0;
+      font-family: 'Great Vibes', cursive;
+      font-size: 1.2rem;
+      color: white;
+      font-style: italic;
+    }
+    
+    /* --- REST OF YOUR CODE (UNCHANGED) --- */
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      gap: 10px;
+      padding: 10px 0;
+      overflow-x: auto;
+      background: #fff;
+    }
+
+    .nav-buttons a {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #d63384;
+      text-decoration: none;
+      border: 1px solid #d63384;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    .products {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .product {
+      background-color: white;
+      border-radius: 10px;
+      padding: 15px;
+      width: 220px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .product img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .product h2 {
+      font-size: 1.2em;
+      margin: 10px 0 5px;
+    }
+
+    .product p {
+      font-size: 1em;
+      color: #555;
+    }
+
+    .buyNowBtn {
+      background-color: rgb(245, 126, 146);
+      color: white;
+      padding: 10px 15px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 15px;
+      width: 100%;
+    }
+
+    .buyNowBtn:hover {
+      background-color: #d63384;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: center;
+      background-color: #fff;
+      border-bottom: 1px solid #ffd6e2;
+      padding: 12px 0;
+    }
+
+    .nav-bar div {
+      margin: 0 16px;
+      font-weight: bold;
+      color: #d63384;
+      cursor: pointer;
+      padding-bottom: 8px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .nav-bar div:hover,
+    .nav-bar .active {
+      color: #d63384;
+      border-bottom: 2px solid #d63384;
+    }
+    .nav-bar a.active {
+        font-weight: bold;
+        border-bottom: 2px solid #d63384;
+    }
+    a{
+        text-decoration: none;
+        color: #d63384;
+    }
+    .nav-bar a:hover{
+      color: #d63384;
+      border-bottom: 2px solid transparent;
+    }
+    
+    /* --- RESPONSIVE STYLES --- */
+    @media (max-width: 600px) {
+      .logo-image {
+        width: 70px;
+        height: 70px;
+      }
+      .header-text-container h1 {
+        font-size: 1.8rem;
+      }
+      .header-text-container h1 .the-prefix {
+        top: -0.7em; /* Adjust superscript on mobile */
+      }
+      .header-text-container p {
+        font-size: 1rem;
+      }
+      .product {
+        width: calc(50% - 20px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="main-header">
+    <img src="logo.jpg" alt="The Girly Zone Logo" class="logo-image">
+    <div class="header-text-container">
+      <h1>
+        <span class="the-prefix">the</span>
+        <span class="girly-word">Girly</span>
+        <span class="zone-word">zone</span>
+      </h1>
+      <p>"where style meets affordability"</p>
+    </div>
+  </header>
+  
+
+  <nav class="nav-bar" id="navBar">
+   <a href="index.html"></a><div class="nav-item">All</div>
+  <a href="index.html"><div class="nav-item">Dresses</div></a>
+   <a href="Bags.html"><div class="nav-item ">Bags</div></a>
+  <a href="Hoods.html"><div class="nav-item">Hoods</div></a>
+  <a href="Shirts.html"><div class="nav-item">Shirts</div></a>
+
+</nav>
+
+  <!-- Sample product sections (repeat as needed) -->
+  <div id="bags" class="products">
+    <div class="product">
+      <img src="brouse1.jpg" alt="Bag">
+      <h2>#0002</h2>
+      <p>Serial Number: <strong class="serialNumber">#0001</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+    <div class="product">
+      <img src="brouse2.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div id="bags" class="products">
+    <div class="product">
+      <img src="brouse3.jpg" alt="Bag">
+      <h2>#0002</h2>
+      <p>Serial Number: <strong class="serialNumber">#0001</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+    <div class="product">
+      <img src="brouse4.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+<div class="product">
+      <img src="brouse5.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="brouse6.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="brouse7.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt1.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt2.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt3.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt4.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt5.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirt6.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="skirtt7.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="short1.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="short4.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="short5.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+  <div class="product">
+      <img src="short6.jpg" alt="Bag">
+      <h2>#0003</h2>
+      <p>Serial Number: <strong class="serialNumber">#0002</strong></p>
+      <button class="buyNowBtn">Buy Now</button>
+    </div>
+  </div>
+
+  
+
+  <script>
+    document.querySelectorAll('.buyNowBtn').forEach(button => {
+      button.addEventListener('click', () => {
+        const serial = button.parentElement.querySelector('.serialNumber').textContent.trim();
+        sessionStorage.setItem('serialNumber', serial);
+        window.location.href = 'order.html';
+      });
+    });
+
+     document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  const links = document.querySelectorAll('.nav-link');
+  const currentPage = window.location.pathname.split('/').pop();
+  links.forEach(link => { if (link.getAttribute('href') === currentPage) { link.classList.add('active');
+    }else{
+      link.classList.remove('active');
+    }
+    });
+  </script>
+</body>
+</html>
