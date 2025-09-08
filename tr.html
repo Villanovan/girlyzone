@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Girly Zone Order Management</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff0f5;
+    }
+
+    header.main-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(to right, #f78da7, #d63384);
+      flex-wrap: wrap;
+    }
+
+    .logo-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    .site-title {
+      font-size: 2rem;
+      color: white;
+      margin-left: 15px;
+      flex: 1;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #d63384;
+      margin-top: 20px;
+    }
+
+    input[type="text"], input[type="file"], input[type="number"], input[type="password"] {
+      padding: 8px;
+      margin: 5px 0;
+      display: block;
+      width: 90%;
+      max-width: 300px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 10px 5px 20px 0;
+      background-color: #f57e92;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #d63384;
+    }
+
+    table {
+      width: 95%;
+      margin: auto;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    img {
+      max-width: 100px;
+      border-radius: 5px;
+    }
+
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #auth-section {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hidden {
+      display: none;
+    }
+    #user-status {
+      margin: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="logo-container">
+      <img src="logo.jpg" alt="Logo" class="logo-image" />
+    </div>
+    <h1 class="site-title">The Girly Zone - Order Management</h1>
+  </header>
+
+  <div id="auth-section">
+    <h3>Log In to Manage Products</h3>
+    <button id="google-login-btn">Sign In with Google</button>
+    <button id="logout-btn" class="hidden">Log Out</button>
+    <div id="user-status"></div>
+  </div>
+
+  <h2>Search by Serial Number</h2>
+  <div class="form-container">
+    <input type="text" id="searchInput" placeholder="Enter serial number..."/>
+  </div>
+
+  <div id="add-product-section" class="hidden">
+    <h3>Add New Entry</h3>
+    <div class="form-container">
+      <input type="text" id="newSerial" placeholder="Enter serial number"/>
+      <input type="file" id="newImage" accept="image/*"/>
+      <input type="number" id="newPrice" placeholder="Enter price"/>
+      <button id="addBtn">Add to supabase</button>
+    </div>
+  </div>
+
+  <table id="imageTable">
+    <thead>
+      <tr>
+        <th>Serial Number</th>
+        <th>Image</th>
+        <th>Price</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // Replace with your actual Supabase URL and Anon Key
+    const SUPABASE_URL = 'https://paejmdjjolulejdjijjx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZWptZGpqb2x1bGVqZGppamp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMjA1MDIsImV4cCI6MjA3Mjg5NjUwMn0.uPFR1pb2Tt3-slJ53-Y7nDt9sjoHFEr2WrWfxOyF3Zo';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const auth = supabase.auth;
+
+    const BUCKET_NAME = "images";
+    
+    // UI Elements
+    const googleLoginBtn = document.getElementById("google-login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const addProductSection = document.getElementById("add-product-section");
+    const userStatusDiv = document.getElementById("user-status");
+    const tableBody = document.querySelector("#imageTable tbody");
+    const searchInput = document.getElementById("searchInput");
+    const addBtn = document.getElementById("addBtn");
+
+    // Event Listeners
+    searchInput.addEventListener("input", (e) => {
+      loadProducts(e.target.value);
+    });
+
+    addBtn.addEventListener("click", () => {
+      const serial = document.getElementById("newSerial").value;
+      const price = document.getElementById("newPrice").value;
+      const imageFile = document.getElementById("newImage").files[0];
+      
+      const productData = {
+        serial_number: serial,
+        price: price,
+        image_url: imageFile,
+      };
+
+      addNewProduct(productData);
+    });
+
+    // Handle Google Sign-in
+    googleLoginBtn.addEventListener("click", async () => {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+        });
+        if (error) throw error;
+      } catch (error) {
+        console.error("Google login error: ", error);
+        alert(`❌ Google login failed: ${error.message}`);
+      }
+    });
+
+    // Handle Sign-out
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        alert("✅ Logged out successfully!");
+      } catch (error) {
+        console.error("Log out error: ", error);
+        alert(`❌ Log out failed: ${error.message}`);
+      }
+    });
+
+    // Auth state listener to update the UI
+    supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user;
+      if (user) {
+        userStatusDiv.textContent = `Logged in as: ${user.email || user.user_metadata.full_name}`;
+        logoutBtn.classList.remove("hidden");
+        googleLoginBtn.classList.add("hidden");
+        addProductSection.classList.remove("hidden");
+      } else {
+        userStatusDiv.textContent = "Logged out.";
+        logoutBtn.classList.add("hidden");
+        googleLoginBtn.classList.remove("hidden");
+        addProductSection.classList.add("hidden");
+      }
+      loadProducts();
+    });
+
+    // Function to load products from Supabase
+    const loadProducts = async (searchTerm = "") => {
+      console.log("🔄 Loading products...");
+      tableBody.innerHTML = '';
+      try {
+        let query = supabase.from("products").select("*");
+
+        if (searchTerm.trim() !== "") {
+          query = query.eq("serial_number", searchTerm);
+        } else {
+          query = query.order("serial_number", { ascending: true });
+        }
+
+        const { data: products, error } = await query;
+
+        if (error) throw error;
+
+        if (products.length === 0) {
+          const row = tableBody.insertRow();
+          const cell = row.insertCell(0);
+          cell.colSpan = 4;
+          cell.textContent = "No products found.";
+          cell.style.textAlign = "center";
+          return;
+        }
+
+        products.forEach((product) => {
+          const newRow = createProductRow(product);
+          tableBody.appendChild(newRow);
+        });
+        console.log("✅ Products loaded!");
+      } catch (error) {
+        console.error("❌ Error loading products:", error);
+        alert("Error loading products. Check console.");
+      }
+    };
+
+    // Helper function to create a table row
+    const createProductRow = (product) => {
+      const row = document.createElement("tr");
+
+      const serialCell = document.createElement("td");
+      serialCell.textContent = product.serial_number;
+      row.appendChild(serialCell);
+
+      const imageCell = document.createElement("td");
+      const img = document.createElement("img");
+      img.src = product.image_url || '';
+      img.alt = `Product ${product.serial_number}`;
+      imageCell.appendChild(img);
+      row.appendChild(imageCell);
+
+      const priceCell = document.createElement("td");
+      priceCell.textContent = `₦${product.price}`;
+      row.appendChild(priceCell);
+
+      const actionsCell = document.createElement("td");
+      if (auth.currentUser) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Remove";
+        deleteBtn.classList.add("delete-btn");
+        deleteBtn.onclick = () => deleteProduct(product.id, product.image_url, product.serial_number);
+        actionsCell.appendChild(deleteBtn);
+      }
+      row.appendChild(actionsCell);
+
+      return row;
+    };
+
+    // Function to delete a product from Supabase
+    const deleteProduct = async (id, imageUrl, serial) => {
+      if (!auth.currentUser) {
+        alert("Please log in to delete a product.");
+        return;
+      }
+      if (!confirm(`Are you sure you want to delete product ${serial}?`)) {
+        return;
+      }
+
+      try {
+        // First, delete the product image from Supabase Storage
+        if (imageUrl) {
+          // Extract the file path from the full URL
+          const filePath = imageUrl.split('/').pop();
+          const { data, error: storageError } = await supabase.storage.from("images").remove([filePath]);
+          if (storageError) {
+            console.error("❌ Error deleting image from storage:", storageError);
+            alert("Error deleting image from storage. Check console.");
+          }
+        }
+
+        // Then, delete the product entry from the Supabase database
+        const { error: dbError } = await supabase.from("products").delete().eq("id", id);
+        if (dbError) throw dbError;
+
+        alert("✅ Product deleted!");
+        loadProducts(); // Refresh the product list
+      } catch (error) {
+        console.error("❌ Error deleting product:", error);
+        alert("Error deleting product. Check console.");
+      }
+    };
+
+    // Function to add a new product to Supabase
+    const addNewProduct = async (productData) => {
+      if (!auth.currentUser) {
+        alert("Please log in to add a product.");
+        return;
+      }
+
+      const fileInput = document.getElementById("newImage");
+      const imageFile = fileInput.files[0];
+      let imageUrl = null;
+      let filePath = null;
+
+      try {
+        if (imageFile) {
+          // Create a unique file path
+          const fileExtension = imageFile.name.split(".").pop();
+          filePath = `${auth.currentUser.uid}/${Date.now()}.${fileExtension}`;
+
+          // Upload the image to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(filePath, imageFile);
+
+          if (uploadError) throw uploadError;
+
+          // Get the public URL for the uploaded image
+          const { data: publicUrlData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(filePath);
+
+          imageUrl = publicUrlData.publicUrl;
+        }
+
+        const { error: insertError } = await supabase.from("products").insert([
+          {
+            image_url: imageUrl,
+            serial_number: productData.serial_number,
+            price: productData.price, // This line was added to fix the issue
+          },
+        ]);
+
+        if (insertError) throw insertError;
+
+        alert("✅ Product added successfully!");
+        loadProducts(); // Refresh the list after adding a new product
+      } catch (error) {
+        console.error("❌ Error adding product:", error);
+        alert(`❌ Error adding product: ${error.message}`);
+      }
+    };
+</script>
