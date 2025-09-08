@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Girly Zone Order Management</title>
@@ -138,7 +139,7 @@
       <input type="text" id="newSerial" placeholder="Enter serial number"/>
       <input type="file" id="newImage" accept="image/*"/>
       <input type="number" id="newPrice" placeholder="Enter price"/>
-      <button id="addBtn">Add to Firebase</button>
+      <button id="addBtn">Add to supabase</button>
     </div>
   </div>
 
@@ -154,192 +155,52 @@
     <tbody></tbody>
   </table>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-    // Now only imports GoogleAuth functions
-    import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // Replace with your actual Supabase URL and Anon Key
+    const SUPABASE_URL = 'https://paejmdjjolulejdjijjx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZWptZGpqb2x1bGVqZGppamp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMjA1MDIsImV4cCI6MjA3Mjg5NjUwMn0.uPFR1pb2Tt3-slJ53-Y7nDt9sjoHFEr2WrWfxOyF3Zo';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const auth = supabase.auth;
 
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyDDC1wYu1NxIcaWwBjKdsJ3Fv63X0D6EwE",
-      authDomain: "girly-zone.firebaseapp.com",
-      projectId: "girly-zone",
-      storageBucket: "girly-zone.appspot.com",
-      messagingSenderId: "890372506369",
-      appId: "1:890372506369:web:2d8b6436e1001e75ce1100",
-      measurementId: "G-GW8D4RKGEH"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const auth = getAuth(app);
-
-    const tableBody = document.querySelector("#imageTable tbody");
-    const addBtn = document.getElementById("addBtn");
-
-    // Updated references to only include Google buttons
+    const BUCKET_NAME = "images";
+    
+    // UI Elements
     const googleLoginBtn = document.getElementById("google-login-btn");
     const logoutBtn = document.getElementById("logout-btn");
-    const userStatusDiv = document.getElementById("user-status");
     const addProductSection = document.getElementById("add-product-section");
+    const userStatusDiv = document.getElementById("user-status");
+    const tableBody = document.querySelector("#imageTable tbody");
+    const searchInput = document.getElementById("searchInput");
+    const addBtn = document.getElementById("addBtn");
 
-    const loadProducts = async (searchTerm = "") => {
-      console.log("🔄 Loading products...");
-      tableBody.innerHTML = '';
-      try {
-        let q;
-        if (searchTerm.trim() === "") {
-          q = query(collection(db, "products"), orderBy("serial", "asc"));
-        } else {
-          q = query(collection(db, "products"), where("serial", "==", searchTerm));
-        }
-
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          const row = tableBody.insertRow();
-          const cell = row.insertCell(0);
-          cell.colSpan = 4;
-          cell.textContent = "No products found.";
-          cell.style.textAlign = "center";
-          return;
-        }
-
-        querySnapshot.forEach((doc) => {
-          const product = doc.data();
-          product.id = doc.id;
-          const newRow = createProductRow(product);
-          tableBody.appendChild(newRow);
-        });
-        console.log("✅ Products loaded!");
-      } catch (error) {
-        console.error("❌ Error loading products:", error);
-        alert("Error loading products. Check console.");
-      }
-    };
-
-    const createProductRow = (product) => {
-      const row = document.createElement("tr");
-
-      const serialCell = document.createElement("td");
-      serialCell.textContent = product.serial;
-      row.appendChild(serialCell);
-
-      const imageCell = document.createElement("td");
-      const img = document.createElement("img");
-      img.src = product.image || '';
-      img.alt = `Product ${product.serial}`;
-      imageCell.appendChild(img);
-      row.appendChild(imageCell);
-
-      const priceCell = document.createElement("td");
-      priceCell.textContent = `$${product.price}`;
-      row.appendChild(priceCell);
-
-      const actionsCell = document.createElement("td");
-      if (auth.currentUser) {
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Remove";
-        deleteBtn.classList.add("delete-btn");
-        deleteBtn.onclick = () => deleteProduct(product.id, product.serial);
-        actionsCell.appendChild(deleteBtn);
-      }
-      row.appendChild(actionsCell);
-
-      return row;
-    };
-
-    addBtn.addEventListener("click", async () => {
-      if (!auth.currentUser) {
-        alert("Please log in to add a product.");
-        return;
-      }
-      const serial = document.getElementById("newSerial").value.trim();
-      const file = document.getElementById("newImage").files[0];
-      const price = document.getElementById("newPrice").value;
-
-      if (!serial || !file || !price) {
-        alert("Please fill all fields.");
-        return;
-      }
-
-      try {
-        const filePath = "products/" + Date.now() + "-" + file.name;
-        const storageRef = ref(storage, filePath);
-
-        await uploadBytes(storageRef, file);
-        const imageUrl = await getDownloadURL(storageRef);
-
-        await addDoc(collection(db, "products"), {
-          serial: serial,
-          price: parseFloat(price),
-          image: imageUrl,
-          imagePath: filePath,
-          keywords: [serial.toLowerCase()]
-        });
-
-        alert("✅ Product added!");
-        document.getElementById("newSerial").value = "";
-        document.getElementById("newImage").value = "";
-        document.getElementById("newPrice").value = "";
-        loadProducts();
-      } catch (error) {
-        console.error("Error adding product: ", error);
-        alert("❌ Failed to add product. Check console.");
-      }
+    // Event Listeners
+    searchInput.addEventListener("input", (e) => {
+      loadProducts(e.target.value);
     });
 
-    window.deleteProduct = async (id, serial) => {
-      if (!auth.currentUser) {
-        alert("Please log in to delete a product.");
-        return;
-      }
-      if (!confirm(`Are you sure you want to delete product ${serial}?`)) {
-        return;
-      }
+    addBtn.addEventListener("click", () => {
+      const serial = document.getElementById("newSerial").value;
+      const price = document.getElementById("newPrice").value;
+      const imageFile = document.getElementById("newImage").files[0];
+      
+      const productData = {
+        serial_number: serial,
+        price: price,
+        image_url: imageFile,
+      };
 
-      try {
-        const productRef = doc(db, "products", id);
-        const productSnap = await getDoc(productRef);
-
-        if (!productSnap.exists()) {
-          alert("Product not found!");
-          return;
-        }
-
-        const data = productSnap.data();
-
-        if (data.imagePath) {
-          try {
-            const imageRef = ref(storage, data.imagePath);
-            await deleteObject(imageRef);
-            console.log("🗑️ Image deleted from storage.");
-          } catch (err) {
-            console.warn("⚠️ Could not delete image from storage:", err);
-          }
-        }
-
-        await deleteDoc(productRef);
-        alert("✅ Product deleted!");
-        loadProducts();
-      } catch (error) {
-        console.error("❌ Error deleting product:", error);
-        alert("Error deleting product. Check console.");
-      }
-    };
-
-    document.getElementById("searchInput").addEventListener("input", (e) => {
-      loadProducts(e.target.value);
+      addNewProduct(productData);
     });
 
     // Handle Google Sign-in
     googleLoginBtn.addEventListener("click", async () => {
-      const provider = new GoogleAuthProvider();
       try {
-        await signInWithPopup(auth, provider);
-        alert("✅ Logged in with Google successfully!");
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+        });
+        if (error) throw error;
       } catch (error) {
         console.error("Google login error: ", error);
         alert(`❌ Google login failed: ${error.message}`);
@@ -349,7 +210,8 @@
     // Handle Sign-out
     logoutBtn.addEventListener("click", async () => {
       try {
-        await signOut(auth);
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
         alert("✅ Logged out successfully!");
       } catch (error) {
         console.error("Log out error: ", error);
@@ -358,9 +220,10 @@
     });
 
     // Auth state listener to update the UI
-    onAuthStateChanged(auth, (user) => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user;
       if (user) {
-        userStatusDiv.textContent = `Logged in as: ${user.email || user.displayName}`;
+        userStatusDiv.textContent = `Logged in as: ${user.email || user.user_metadata.full_name}`;
         logoutBtn.classList.remove("hidden");
         googleLoginBtn.classList.add("hidden");
         addProductSection.classList.remove("hidden");
@@ -372,7 +235,160 @@
       }
       loadProducts();
     });
-  </script>
-</body>
 
+    // Function to load products from Supabase
+    const loadProducts = async (searchTerm = "") => {
+      console.log("🔄 Loading products...");
+      tableBody.innerHTML = '';
+      try {
+        let query = supabase.from("products").select("*");
+
+        if (searchTerm.trim() !== "") {
+          query = query.eq("serial_number", searchTerm);
+        } else {
+          query = query.order("serial_number", { ascending: true });
+        }
+
+        const { data: products, error } = await query;
+
+        if (error) throw error;
+
+        if (products.length === 0) {
+          const row = tableBody.insertRow();
+          const cell = row.insertCell(0);
+          cell.colSpan = 4;
+          cell.textContent = "No products found.";
+          cell.style.textAlign = "center";
+          return;
+        }
+
+        products.forEach((product) => {
+          const newRow = createProductRow(product);
+          tableBody.appendChild(newRow);
+        });
+        console.log("✅ Products loaded!");
+      } catch (error) {
+        console.error("❌ Error loading products:", error);
+        alert("Error loading products. Check console.");
+      }
+    };
+
+    // Helper function to create a table row
+    const createProductRow = (product) => {
+      const row = document.createElement("tr");
+
+      const serialCell = document.createElement("td");
+      serialCell.textContent = product.serial_number;
+      row.appendChild(serialCell);
+
+      const imageCell = document.createElement("td");
+      const img = document.createElement("img");
+      img.src = product.image_url || '';
+      img.alt = `Product ${product.serial_number}`;
+      imageCell.appendChild(img);
+      row.appendChild(imageCell);
+
+      const priceCell = document.createElement("td");
+      priceCell.textContent = `₦${product.price}`;
+      row.appendChild(priceCell);
+
+      const actionsCell = document.createElement("td");
+      if (auth.currentUser) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Remove";
+        deleteBtn.classList.add("delete-btn");
+        deleteBtn.onclick = () => deleteProduct(product.id, product.image_url, product.serial_number);
+        actionsCell.appendChild(deleteBtn);
+      }
+      row.appendChild(actionsCell);
+
+      return row;
+    };
+
+    // Function to delete a product from Supabase
+    const deleteProduct = async (id, imageUrl, serial) => {
+      if (!auth.currentUser) {
+        alert("Please log in to delete a product.");
+        return;
+      }
+      if (!confirm(`Are you sure you want to delete product ${serial}?`)) {
+        return;
+      }
+
+      try {
+        // First, delete the product image from Supabase Storage
+        if (imageUrl) {
+          // Extract the file path from the full URL
+          const filePath = imageUrl.split('/').pop();
+          const { data, error: storageError } = await supabase.storage.from("images").remove([filePath]);
+          if (storageError) {
+            console.error("❌ Error deleting image from storage:", storageError);
+            alert("Error deleting image from storage. Check console.");
+          }
+        }
+
+        // Then, delete the product entry from the Supabase database
+        const { error: dbError } = await supabase.from("products").delete().eq("id", id);
+        if (dbError) throw dbError;
+
+        alert("✅ Product deleted!");
+        loadProducts(); // Refresh the product list
+      } catch (error) {
+        console.error("❌ Error deleting product:", error);
+        alert("Error deleting product. Check console.");
+      }
+    };
+
+    // Function to add a new product to Supabase
+    const addNewProduct = async (productData) => {
+      if (!auth.currentUser) {
+        alert("Please log in to add a product.");
+        return;
+      }
+
+      const fileInput = document.getElementById("newImage");
+      const imageFile = fileInput.files[0];
+      let imageUrl = null;
+      let filePath = null;
+
+      try {
+        if (imageFile) {
+          // Create a unique file path
+          const fileExtension = imageFile.name.split(".").pop();
+          filePath = `${auth.currentUser.uid}/${Date.now()}.${fileExtension}`;
+
+          // Upload the image to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(filePath, imageFile);
+
+          if (uploadError) throw uploadError;
+
+          // Get the public URL for the uploaded image
+          const { data: publicUrlData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(filePath);
+
+          imageUrl = publicUrlData.publicUrl;
+        }
+
+        const { error: insertError } = await supabase.from("products").insert([
+          {
+            image_url: imageUrl,
+            serial_number: productData.serial_number,
+            price: productData.price, // This line was added to fix the issue
+          },
+        ]);
+
+        if (insertError) throw insertError;
+
+        alert("✅ Product added successfully!");
+        loadProducts(); // Refresh the list after adding a new product
+      } catch (error) {
+        console.error("❌ Error adding product:", error);
+        alert(`❌ Error adding product: ${error.message}`);
+      }
+    };
+</script>
+</body>
 </html>
